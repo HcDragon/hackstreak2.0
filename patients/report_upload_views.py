@@ -466,3 +466,34 @@ def get_patient_reports(request):
         
     except Patient.DoesNotExist:
         return Response({'error': 'Patient not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+def analyze_pdf_report(file_path):
+    """Wrapper function for PDF analysis - used by doctor views"""
+    try:
+        # Extract text from PDF
+        extracted_text = extract_text_from_pdf(file_path)
+        
+        if not extracted_text:
+            return {
+                'success': False,
+                'error': 'Could not extract text from PDF'
+            }
+        
+        # Clean extracted text
+        cleaned_text = clean_medical_text(extracted_text)
+        
+        # Analyze with AI
+        ai_analysis = analyze_with_ai(cleaned_text)
+        
+        return {
+            'success': True,
+            'analysis': ai_analysis,
+            'extracted_text_preview': cleaned_text[:200] + '...'
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }

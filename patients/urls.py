@@ -11,7 +11,8 @@ from .report_upload_views import upload_medical_report, get_patient_reports
 from .debug_views import debug_pdf_analysis, test_text_analysis, test_ai_connection
 from .doctor_views import (
     doctor_login, doctor_logout, doctor_dashboard, doctor_patients,
-    doctor_medical_records, delete_medical_record, doctor_medicines, doctor_prescriptions
+    doctor_medical_records, delete_medical_record, doctor_medicines, doctor_prescriptions,
+    upload_medical_document
 )
 from .patient_auth_views import (
     patient_signup, patient_login, patient_logout, patient_profile,
@@ -59,4 +60,5 @@ urlpatterns = [
     path('doctor/medical-records/<int:record_id>/', delete_medical_record, name='delete-medical-record'),
     path('doctor/medicines/', doctor_medicines, name='doctor-medicines'),
     path('doctor/prescriptions/', doctor_prescriptions, name='doctor-prescriptions'),
+    path('doctor/upload-document/', upload_medical_document, name='doctor-upload-document'),
 ]

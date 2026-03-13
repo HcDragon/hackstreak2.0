@@ -1,14 +1,1 @@
-[12/Mar/2026 08:08:25] "OPTIONS /api/patients/search/?patient_id=PAT-00001 HTTP/1.1" 200 0
-Not Found: /api/patients/search/
-[12/Mar/2026 08:08:25] "GET /api/patients/search/?patient_id=PAT-00001 HTTP/1.1" 404 29
-[12/Mar/2026 08:08:32] "GET /api/patients/search/?patient_id=PAT00001 HTTP/1.1" 200 1706
-[12/Mar/2026 08:08:33] "GET /api/patients/search/?patient_id=PAT00001 HTTP/1.1" 200 1706
-[12/Mar/2026 08:08:33] "GET /api/doctor/medical-records/ HTTP/1.1" 200 2
-[12/Mar/2026 08:10:30] "GET /api/patients/search/?patient_id=PAT00001 HTTP/1.1" 200 1706
-[12/Mar/2026 08:10:30] "GET /api/doctor/medical-records/ HTTP/1.1" 200 2
-Not Found: /api/patients/search/
-[12/Mar/2026 08:10:38] "GET /api/patients/search/?patient_id=PAT-0001 HTTP/1.1" 404 29
-[12/Mar/2026 08:10:50] "POST /api/doctor/login/ HTTP/1.1" 200 556
-[12/Mar/2026 08:11:14] "GET /api/patients/search/?patient_id=PAT00001 HTTP/1.1" 200 1706
-[12/Mar/2026 08:11:14] "GET /api/patients/search/?patient_id=PAT00001 HTTP/1.1" 200 1706
-[12/Mar/2026 08:11:14] "GET /api/doctor/medical-records/ HTTP/1.1" 200 2
+Error: That port is already in use.

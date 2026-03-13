@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Patient, MedicalRecord
+from .models import Patient, MedicalRecord, Doctor
 from .patient_serializers import PatientProfileSerializer
 
 class MedicalRecordSerializer(serializers.ModelSerializer):
@@ -13,6 +13,7 @@ class PatientSerializer(serializers.ModelSerializer):
     qr_code_url = serializers.SerializerMethodField()
     assigned_doctor_name = serializers.SerializerMethodField()
     user_email = serializers.CharField(source='user.email', read_only=True)
+    total_medical_records = serializers.SerializerMethodField()
 
     class Meta:
         model = Patient
@@ -26,3 +27,6 @@ class PatientSerializer(serializers.ModelSerializer):
         if obj.assigned_doctor:
             return f"Dr. {obj.assigned_doctor.user.first_name} {obj.assigned_doctor.user.last_name}"
         return None
+    
+    def get_total_medical_records(self, obj):
+        return obj.medical_records.count()

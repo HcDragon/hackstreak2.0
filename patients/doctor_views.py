@@ -13,6 +13,9 @@ from .doctor_serializers import (
     DoctorRecommendationSerializer, PatientDetailSerializer,
     MedicalRecordDetailSerializer, CreateMedicalRecordSerializer
 )
+from .report_upload_views import analyze_pdf_report
+import os
+from django.conf import settings
 
 @api_view(['POST'])
 def doctor_login(request):
@@ -432,3 +435,101 @@ def assign_patient(request, patient_id):
         'message': f'Patient {patient.name} assigned successfully',
         'patient': PatientDetailSerializer(patient).data
     })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_medical_document(request):
+    """Upload and analyze medical document (PDF)"""
+    try:
+        doctor = Doctor.objects.get(user=request.user)
+    except Doctor.DoesNotExist:
+        return Response({'error': 'Doctor profile not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if 'file' not in request.FILES:
+        return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    uploaded_file = request.FILES['file']
+    patient_id = request.data.get('patient_id')
+    
+    # Validate file type
+    if not uploaded_file.name.lower().endswith('.pdf'):
+        return Response({'error': 'Only PDF files are allowed'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Validate file size (10MB limit)
+    if uploaded_file.size > 10 * 1024 * 1024:
+        return Response({'error': 'File size too large. Maximum 10MB allowed'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Validate patient if provided
+    patient = None
+    if patient_id:
+        try:
+            patient = Patient.objects.get(patient_id=patient_id)
+        except Patient.DoesNotExist:
+            return Response({'error': 'Patient not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        # Save file temporarily
+        temp_reports_dir = os.path.join(settings.MEDIA_ROOT, 'temp_reports')
+        os.makedirs(temp_reports_dir, exist_ok=True)
+        
+        file_path = os.path.join(temp_reports_dir, f"doctor_{doctor.id}_{uploaded_file.name}")
+        
+        with open(file_path, 'wb+') as destination:
+            for chunk in uploaded_file.chunks():
+                destination.write(chunk)
+        
+        # Analyze the PDF
+        analysis_result = analyze_pdf_report(file_path)
+        
+        # Clean up temporary file
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        if analysis_result['success']:
+            analysis_data = analysis_result['analysis']
+            
+            # If patient is provided and analysis is successful, create medical record
+            if patient and analysis_data.get('disease'):
+                medical_record_data = {
+                    'patient': patient.id,
+                    'doctor': doctor.id,
+                    'disease': analysis_data.get('disease', 'Unknown'),
+                    'symptoms': analysis_data.get('symptoms', ''),
+                    'diagnosis': analysis_data.get('diagnosis', ''),
+                    'prescription': analysis_data.get('prescription', ''),
+                    'doctor_name': f"Dr. {doctor.user.first_name} {doctor.user.last_name}",
+                    'visit_date': datetime.now().date(),
+                    'notes': f"Created from uploaded document. Risk Level: {analysis_data.get('risk_level', 'Unknown')}"
+                }
+                
+                serializer = CreateMedicalRecordSerializer(data=medical_record_data)
+                if serializer.is_valid():
+                    medical_record = serializer.save()
+                    analysis_result['medical_record_created'] = True
+                    analysis_result['medical_record_id'] = medical_record.id
+                else:
+                    analysis_result['medical_record_error'] = serializer.errors
+            
+            return Response({
+                'success': True,
+                'message': 'Document analyzed successfully',
+                'analysis': analysis_result,
+                'doctor': f"Dr. {doctor.user.first_name} {doctor.user.last_name}"
+            })
+        else:
+            return Response({
+                'success': False,
+                'error': analysis_result.get('error', 'Analysis failed'),
+                'message': 'Failed to analyze document'
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    except Exception as e:
+        # Clean up file if it exists
+        if 'file_path' in locals() and os.path.exists(file_path):
+            os.remove(file_path)
+        
+        return Response({
+            'success': False,
+            'error': str(e),
+            'message': 'Error processing document'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
